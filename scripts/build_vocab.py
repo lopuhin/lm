@@ -26,6 +26,9 @@ def main():
     token_counts = counts.most_common()
     if len(token_counts) > args.limit:
         unk_count = sum(c for _, c in token_counts[args.limit:])
+        total_count = sum(c for _, c in token_counts)
+        print('OOV rate: {:.2%}, min count {}'.format(
+            unk_count / total_count, token_counts[args.limit][1]))
         token_counts = token_counts[:args.limit - 1]
         token_counts.append((unk, unk_count))
         token_counts.sort(key=lambda x: x[1], reverse=True)
