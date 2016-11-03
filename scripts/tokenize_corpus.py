@@ -11,6 +11,7 @@ def main():
     parser.add_argument('corpus')
     parser.add_argument('output')
     parser.add_argument('--no-punct', action='store_true')
+    parser.add_argument('--min-length', type=int)
     args = parser.parse_args()
 
     if args.no_punct:
@@ -21,9 +22,10 @@ def main():
     with open(args.corpus) as f:
         with open(args.output, 'w') as outf:
             for line in f:
-                line = line.strip()
-                outf.write(' '.join(tokenize(line)).lower())
-                outf.write('\n')
+                tokens = tokenize(line.strip())
+                if not args.min_length or len(tokens) >= args.min_length:
+                    outf.write(' '.join(tokens).lower())
+                    outf.write('\n')
 
 
 if __name__ == '__main__':
