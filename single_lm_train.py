@@ -1,3 +1,6 @@
+import os.path
+import time
+
 import tensorflow as tf
 
 from data_utils import Vocabulary, Dataset
@@ -6,7 +9,7 @@ from run_utils import run_train, run_eval
 
 
 flags = tf.flags
-flags.DEFINE_string('logdir', '/tmp/lm1b', 'Logging directory.')
+flags.DEFINE_string('logdir', None, 'Logging directory.')
 flags.DEFINE_string('datadir', None, 'Data directory.')
 flags.DEFINE_string('vocab', None, 'Vocab file.')
 flags.DEFINE_string(
@@ -27,10 +30,14 @@ def main(_):
     hps.vocab_size = vocab.num_tokens
 
     if FLAGS.mode == 'train':
+        if FLAGS.logdir is None:
+            FLAGS.logdir = os.path.join('/tmp', 'lm-run-{}'.format(int(time.time())))
+            print('logdir: {}'.format(FLAGS.logdir))
         hps.batch_size = 256
         dataset = Dataset(vocab, FLAGS.datadir + '/train-*')
         run_train(dataset, hps, FLAGS.logdir + '/train', ps_device='/gpu:0')
     elif FLAGS.mode.startswith('eval_'):
+        assert FLAGS.logdir is not None
         if FLAGS.mode == 'eval_train':
             data_dir = FLAGS.datadir + '/train-*'
         elif FLAGS.mode == 'eval_valid':
