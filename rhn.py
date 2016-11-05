@@ -10,9 +10,8 @@ class RHNCell(rnn_cell.RNNCell):
 
     Reference: https://arxiv.org/abs/1607.03474
     """
-    def __init__(self, num_units, is_training, depth=3, forget_bias=None):
+    def __init__(self, num_units, depth, forget_bias=None):
         self._num_units = num_units
-        self.is_training = is_training
         self.depth = depth
         self.forget_bias = forget_bias
 
@@ -31,13 +30,13 @@ class RHNCell(rnn_cell.RNNCell):
     def __call__(self, inputs, state, scope=None):
         current_state = state
         for i in range(self.depth):
-            with tf.variable_scope('h_{}'.format(i)):
+            with tf.variable_scope('RNNCell/h_{}'.format(i)):
                 if i == 0:
                     h = tf.tanh(
                         linear([inputs, current_state], self._num_units, True))
                 else:
                     h = tf.tanh(linear([current_state], self._num_units, True))
-            with tf.variable_scope('t_{}'.format(i)):
+            with tf.variable_scope('RNNCell/t_{}'.format(i)):
                 if i == 0:
                     t = tf.sigmoid(linear(
                         [inputs, current_state],
@@ -47,7 +46,7 @@ class RHNCell(rnn_cell.RNNCell):
                         [current_state],
                         self._num_units, True, self.forget_bias))
             current_state = (h - current_state) * t + current_state
-        return current_state
+        return current_state, current_state
 
 
 def linear(args, output_size, bias, bias_start=None, scope=None):

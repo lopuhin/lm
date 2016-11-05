@@ -1,6 +1,7 @@
 import tensorflow as tf
 
 from model_utils import sharded_variable, LSTMCell
+from rhn import RHNCell
 from common import assign_to_gpu, average_grads, find_trainable_variables
 from hparams import HParams
 
@@ -49,9 +50,9 @@ class LM(object):
         if mode in ['train', 'eval'] and hps.average_params:
             with tf.name_scope(None):
                 # This ^^^ is needed due to EMA implementation silliness.
-                # Keep track of moving average of LSTM variables.
+                # Keep track of moving average of RNN variables.
                 ema = tf.train.ExponentialMovingAverage(decay=0.999)
-                variables_to_average = find_trainable_variables('LSTM')
+                variables_to_average = find_trainable_variables('RNN')
                 self.train_op = tf.group(
                     *[self.train_op, ema.apply(variables_to_average)])
                 self.avg_dict = ema.variables_to_restore(variables_to_average)
@@ -64,7 +65,8 @@ class LM(object):
             with tf.device('/gpu:%d' % gpu):
                 v = tf.Variable(
                     tf.zeros([hps.batch_size,
-                              hps.state_size + hps.projected_size]),
+                              hps.state_size]),
+                              # hps.state_size + hps.projected_size]),
                     trainable=False,
                     collections=[tf.GraphKeys.LOCAL_VARIABLES],
                     name='state_%d_%d' % (gpu, i))
@@ -80,15 +82,18 @@ class LM(object):
         inputs = [tf.squeeze(v, [1]) for v in tf.split(1, hps.num_steps, x)]
 
         for i in range(hps.num_layers):
-            with tf.variable_scope('lstm_%d' % i):
-                cell = LSTMCell(
-                    hps.state_size, hps.emb_size, num_proj=hps.projected_size)
+            with tf.variable_scope('layer_{}'.format(i)):
+                # cell = LSTMCell(
+                #    hps.state_size, hps.emb_size, num_proj=hps.projected_size)
+                cell = RHNCell(hps.state_size, depth=2, forget_bias=-2.0)
 
-            state = self.initial_states[i]
-            for t in range(hps.num_steps):
-                inputs[t], state = cell(inputs[t], state)
-                if hps.keep_prob < 1.0:
-                    inputs[t] = tf.nn.dropout(inputs[t], hps.keep_prob)
+                state = self.initial_states[i]
+                for t in range(hps.num_steps):
+                    if t > 0:
+                        tf.get_variable_scope().reuse_variables()
+                    inputs[t], state = cell(inputs[t], state)
+                    if hps.keep_prob < 1.0:
+                        inputs[t] = tf.nn.dropout(inputs[t], hps.keep_prob)
 
             with tf.control_dependencies(
                     [self.initial_states[i].assign(state)]):
@@ -128,7 +133,7 @@ class LM(object):
         loss = loss * hps.num_steps
 
         emb_vars = find_trainable_variables('emb')
-        lstm_vars = find_trainable_variables('LSTM')
+        lstm_vars = find_trainable_variables('RNN')
         softmax_vars = find_trainable_variables('softmax')
 
         all_vars = emb_vars + lstm_vars + softmax_vars

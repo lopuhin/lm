@@ -42,10 +42,11 @@ class CheckpointLoader(object):
 
     def load_checkpoint(self):
         while True:
-            time_to_sleep = 300
-            print('Just sleeping for {} seconds'.format(time_to_sleep))
-            time.sleep(time_to_sleep)
-            print('done sleeping.')
+            if self.last_global_step:
+                time_to_sleep = 300
+                print('Just sleeping for {} seconds'.format(time_to_sleep))
+                time.sleep(time_to_sleep)
+                print('done sleeping.')
             if load_from_checkpoint(self.saver, self.logdir):
                 global_step = int(self.global_step_tensor.eval())
                 if global_step <= self.last_global_step:

@@ -67,7 +67,7 @@ class LSTMCell(tf.nn.rnn_cell.RNNCell):
             self._state_size = 2 * num_units
             self._output_size = num_units
 
-        with tf.variable_scope('LSTMCell'):
+        with tf.variable_scope('RNNCell'):
             self._concat_w = _get_concat_variable(
                 'W', [input_size + num_proj, 4 * self._num_units],
                 dtype, self._num_unit_shards)
@@ -98,8 +98,7 @@ class LSTMCell(tf.nn.rnn_cell.RNNCell):
         if input_size.value is None:
             raise ValueError(
                 'Could not infer input size from inputs.get_shape()[-1]')
-        with tf.variable_scope(type(self).__name__,
-                               initializer=self._initializer):  # 'LSTMCell'
+        with tf.variable_scope('RNNCell', initializer=self._initializer):
             # i = input_gate, j = new_input, f = forget_gate, o = output_gate
             cell_inputs = tf.concat(1, [inputs, m_prev])
             lstm_matrix = tf.nn.bias_add(
