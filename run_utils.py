@@ -35,6 +35,10 @@ def run_train(dataset, hps, logdir, ps_device, task=0, master=''):
                             intra_op_parallelism_threads=2,
                             inter_op_parallelism_threads=20)
     with sv.managed_session(master, config=config) as sess:
+        # sv.saver.save(sess, 'savepath', global_step=sess.run(model.global_step))
+        # return
+        for v in tf.get_collection('initial_state'):
+            sess.run(v.initializer, feed_dict={model.batch_size: hps.batch_size})
         # Slowly increase the number of workers during
         # beginning of the training.
         while not sv.should_stop():
@@ -67,8 +71,10 @@ def run_train(dataset, hps, logdir, ps_device, task=0, master=''):
                 run_options = tf.RunOptions(
                     trace_level=tf.RunOptions.FULL_TRACE)
                 run_metadata = tf.RunMetadata()
+                feed_dict = {model.x: x, model.y: y, model.w: w,
+                             model.batch_size: hps.batch_size}
                 fetched = sess.run(
-                    fetches, {model.x: x, model.y: y, model.w: w},
+                    fetches, feed_dict,
                     options=run_options, run_metadata=run_metadata)
                 # Create the Timeline object, and write it to a json
                 tl = timeline.Timeline(run_metadata.step_stats)

@@ -8,10 +8,13 @@ from hparams import HParams
 class LM(object):
     def __init__(self, hps, mode='train', ps_device='/gpu:0'):
         self.hps = hps
-        data_size = hps.batch_size * hps.num_gpus
-        self.x = tf.placeholder(tf.int32, [data_size, hps.num_steps])
-        self.y = tf.placeholder(tf.int32, [data_size, hps.num_steps])
-        self.w = tf.placeholder(tf.int32, [data_size, hps.num_steps])
+        self.x = tf.placeholder(tf.int32, [None, hps.num_steps])
+        self.y = tf.placeholder(tf.int32, [None, hps.num_steps])
+        self.w = tf.placeholder(tf.int32, [None, hps.num_steps])
+        self.batch_size = tf.placeholder(tf.int32, [])
+        tf.add_to_collection('input_xs', self.x)
+        tf.add_to_collection('input_ys', self.y)
+        tf.add_to_collection('batch_size', self.batch_size)
 
         losses = []
         tower_grads = []
@@ -63,11 +66,12 @@ class LM(object):
         for i in range(hps.num_layers):
             with tf.device('/gpu:%d' % gpu):
                 v = tf.Variable(
-                    tf.zeros([hps.batch_size,
+                    tf.zeros([self.batch_size,
                               hps.state_size + hps.projected_size]),
                     trainable=False,
-                    collections=[tf.GraphKeys.LOCAL_VARIABLES],
-                    name='state_%d_%d' % (gpu, i))
+                    collections=['initial_state'],
+                    name='state_%d_%d' % (gpu, i),
+                    validate_shape=False)
                 self.initial_states += [v]
 
         emb_vars = sharded_variable(
@@ -95,6 +99,7 @@ class LM(object):
                 inputs[t] = tf.identity(inputs[t])
 
         inputs = tf.reshape(tf.concat(1, inputs), [-1, hps.projected_size])
+        tf.add_to_collection('hidden_output', inputs)
 
         # Initialization ignores the fact that softmax_w is transposed.
         # That worked slightly better.
@@ -102,13 +107,15 @@ class LM(object):
             'softmax_w', [hps.vocab_size, hps.projected_size], hps.num_shards)
         softmax_b = tf.get_variable('softmax_b', [hps.vocab_size])
 
-        if hps.num_sampled == 0:
-            full_softmax_w = tf.reshape(
-                tf.concat(1, softmax_w), [-1, hps.projected_size])
-            full_softmax_w = full_softmax_w[:hps.vocab_size, :]
+        full_softmax_w = tf.reshape(
+            tf.concat(1, softmax_w), [-1, hps.projected_size])
+        full_softmax_w = full_softmax_w[:hps.vocab_size, :]
 
-            logits = (tf.matmul(inputs, full_softmax_w, transpose_b=True) +
-                      softmax_b)
+        logits = (tf.matmul(inputs, full_softmax_w, transpose_b=True) +
+                  softmax_b)
+        softmax = tf.nn.softmax(logits)
+        tf.add_to_collection('softmax', softmax)
+        if hps.num_sampled == 0:
             # targets = tf.reshape(tf.transpose(self.y), [-1])
             targets = tf.reshape(y, [-1])
             loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
