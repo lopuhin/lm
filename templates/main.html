@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="container">
+    <h3>RNN Language Model</h3>
+    <form action="/" method="get">
+        <input id="phrase" title="Phrase"
+               placeholder="Type an incomplete phrase and press Enter"
+               type="text" name="phrase" value="{{ phrase or ''}}"/>
+    </form>
+
+    {%  if top %}
+        <table class="bordered">
+            {% for word, prob in top %}
+                <tr>
+                    <td>{{ word }}</td>
+                    <td>{{ prob }}</td>
+                </tr>
+            {% endfor %}
+        </table>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+
+{% block extra_js %}
+    <script type="text/javascript">
+        $(document).ready(function () {
+            // Focus at the end of text input.
+            var input = document.getElementById('phrase');
+            input.focus();
+            var val = input.value;
+            input.value = '';
+            input.value = val;
+        });
+    </script>
+{% endblock %}
+
