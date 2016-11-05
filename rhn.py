@@ -6,7 +6,8 @@ from tensorflow.python.util import nest
 
 
 class RHNCell(rnn_cell.RNNCell):
-    """Variational Recurrent Highway Layer
+    """(Variational) Recurrent Highway Layer
+    This is not a variational rhn, noise was removed.
 
     Reference: https://arxiv.org/abs/1607.03474
     """

@@ -89,7 +89,7 @@ class LM(object):
                     num_units=hps.state_size,
                     input_size=hps.emb_size,
                     num_proj=hps.projected_size,
-                    depth=2,
+                    depth=hps.rhn_depth,
                     forget_bias=-2.0)
 
                 state = self.initial_states[i]
@@ -191,6 +191,7 @@ class LM(object):
             emb_size=512,
             state_size=2048,
             projected_size=512,
+            rhn_depth=4,
             num_sampled=8192,
             num_gpus=1,
 
