@@ -85,7 +85,12 @@ class LM(object):
             with tf.variable_scope('layer_{}'.format(i)):
                 # cell = LSTMCell(
                 #    hps.state_size, hps.emb_size, num_proj=hps.projected_size)
-                cell = RHNCell(hps.state_size, depth=2, forget_bias=-2.0)
+                cell = RHNCell(
+                    num_units=hps.state_size,
+                    input_size=hps.emb_size,
+                    num_proj=hps.projected_size,
+                    depth=2,
+                    forget_bias=-2.0)
 
                 state = self.initial_states[i]
                 for t in range(hps.num_steps):

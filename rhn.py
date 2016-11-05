@@ -10,18 +10,21 @@ class RHNCell(rnn_cell.RNNCell):
 
     Reference: https://arxiv.org/abs/1607.03474
     """
-    def __init__(self, num_units, depth, forget_bias=None):
+    def __init__(self, *, depth, num_units, input_size,
+                 num_proj=None, forget_bias=None):
+        self._depth = depth
         self._num_units = num_units
-        self.depth = depth
+        self._input_size = input_size
+        self._num_proj = num_proj
         self.forget_bias = forget_bias
 
     @property
     def input_size(self):
-        return self._num_units
+        return self._input_size
 
     @property
     def output_size(self):
-        return self._num_units
+        return self._num_proj or self._num_units
 
     @property
     def state_size(self):
@@ -29,15 +32,15 @@ class RHNCell(rnn_cell.RNNCell):
 
     def __call__(self, inputs, state, scope=None):
         current_state = state
-        for i in range(self.depth):
-            with tf.variable_scope('RNNCell/h_{}'.format(i)):
-                if i == 0:
+        for layer in range(self._depth):
+            with tf.variable_scope('RNNCell/h_{}'.format(layer)):
+                if layer == 0:
                     h = tf.tanh(
                         linear([inputs, current_state], self._num_units, True))
                 else:
                     h = tf.tanh(linear([current_state], self._num_units, True))
-            with tf.variable_scope('RNNCell/t_{}'.format(i)):
-                if i == 0:
+            with tf.variable_scope('RNNCell/t_{}'.format(layer)):
+                if layer == 0:
                     t = tf.sigmoid(linear(
                         [inputs, current_state],
                         self._num_units, True, self.forget_bias))
@@ -46,7 +49,14 @@ class RHNCell(rnn_cell.RNNCell):
                         [current_state],
                         self._num_units, True, self.forget_bias))
             current_state = (h - current_state) * t + current_state
-        return current_state, current_state
+
+        if self._num_proj is not None:
+            # FIXME - here we are not making output a part of the state,
+            # but LSTMCell does it!
+            output = linear([current_state], self._num_proj, False)
+        else:
+            output = current_state
+        return output, current_state
 
 
 def linear(args, output_size, bias, bias_start=None, scope=None):
