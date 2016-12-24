@@ -35,8 +35,6 @@ def run_train(dataset, hps, logdir, ps_device, task=0, master=''):
                             intra_op_parallelism_threads=2,
                             inter_op_parallelism_threads=20)
     with sv.managed_session(master, config=config) as sess:
-        # sv.saver.save(sess, 'savepath', global_step=sess.run(model.global_step))
-        # return
         for v in tf.get_collection('initial_state'):
             sess.run(v.initializer, feed_dict={model.batch_size: hps.batch_size})
         # Slowly increase the number of workers during
@@ -130,14 +128,18 @@ def run_eval(dataset, hps, logdir, mode, num_eval_steps):
             data_iterator = dataset.iterate_once(
                 hps.batch_size * hps.num_gpus, hps.num_steps)
             tf.initialize_local_variables().run()
+            for v in tf.get_collection('initial_state'):
+                sess.run(v.initializer,
+                         feed_dict={model.batch_size: hps.batch_size})
             loss_nom = 0.0
             loss_den = 0.0
             for i, (x, y, w) in enumerate(data_iterator):
                 if i >= num_eval_steps:
                     break
 
-                loss = sess.run(
-                    model.loss, {model.x: x, model.y: y, model.w: w})
+                loss = sess.run(model.loss, {
+                    model.x: x, model.y: y, model.w: w,
+                    model.batch_size: hps.batch_size})
                 loss_nom += loss
                 loss_den += w.mean()
                 loss = loss_nom / loss_den
