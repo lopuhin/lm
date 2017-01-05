@@ -3,15 +3,18 @@
 import argparse
 import re
 
-from nltk.tokenize import wordpunct_tokenize
+from nltk.tokenize import wordpunct_tokenize, sent_tokenize
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('corpus')
-    parser.add_argument('output')
-    parser.add_argument('--no-punct', action='store_true')
-    parser.add_argument('--min-length', type=int)
+    arg = parser.add_argument
+    arg('corpus')
+    arg('output')
+    arg('--no-punct', action='store_true')
+    arg('--min-length', type=int)
+    arg('--sent-tokenize', action='store_true',
+        help='assume sentences do not span lines')
     args = parser.parse_args()
 
     if args.no_punct:
@@ -22,10 +25,15 @@ def main():
     with open(args.corpus) as f:
         with open(args.output, 'w') as outf:
             for line in f:
-                tokens = tokenize(line.strip())
-                if not args.min_length or len(tokens) >= args.min_length:
-                    outf.write(' '.join(tokens).lower())
-                    outf.write('\n')
+                if args.sent_tokenize:
+                    sentences = sent_tokenize(line)
+                else:
+                    sentences = [line]
+                for sent in sentences:
+                    tokens = tokenize(sent.strip())
+                    if not args.min_length or len(tokens) >= args.min_length:
+                        outf.write(' '.join(tokens).lower())
+                        outf.write('\n')
 
 
 if __name__ == '__main__':
