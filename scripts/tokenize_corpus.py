@@ -11,16 +11,25 @@ def main():
     arg = parser.add_argument
     arg('corpus')
     arg('output')
-    arg('--no-punct', action='store_true')
+    arg('--tokenizer', choices=['nltk', 're', 'mystem'], default='nltk')
     arg('--min-length', type=int)
     arg('--sent-tokenize', action='store_true',
         help='assume sentences do not span lines')
     args = parser.parse_args()
 
-    if args.no_punct:
+    if args.tokenizer == 're':
         tokenize = lambda s: re.findall('\w+', s)
-    else:
+    elif args.tokenizer == 'nltk':
         tokenize = wordpunct_tokenize
+    elif args.tokenizer == 'mystem':
+        from pymystem3 import Mystem
+        mystem = Mystem()
+        tokenize = lambda s: [
+            x for x in (x['text'].replace('ё', 'е').strip()
+                        for x in mystem.analyze(s))
+            if x]
+    else:
+        raise ValueError('Invalid tokenizer {}'.format(args.tokenizer))
 
     with open(args.corpus) as f:
         with open(args.output, 'w') as outf:
