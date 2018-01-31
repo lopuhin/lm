@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 import argparse
 import re
 
@@ -25,8 +24,7 @@ def main():
         from pymystem3 import Mystem
         mystem = Mystem()
         tokenize = lambda s: [
-            x for x in (x['text'].replace('ё', 'е').strip()
-                        for x in mystem.analyze(s))
+            x for x in (x['text'].strip() for x in mystem.analyze(s))
             if x]
     else:
         raise ValueError('Invalid tokenizer {}'.format(args.tokenizer))
@@ -41,8 +39,12 @@ def main():
                 for sent in sentences:
                     tokens = tokenize(sent.strip())
                     if not args.min_length or len(tokens) >= args.min_length:
-                        outf.write(' '.join(tokens).lower())
+                        outf.write(normalize(' '.join(tokens)))
                         outf.write('\n')
+
+
+def normalize(text):
+    return text.lower().replace('ё', 'е')
 
 
 if __name__ == '__main__':
