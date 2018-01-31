@@ -1,5 +1,17 @@
 # lm
 
+Currently Tensorflow 0.11 is supported.
+
+- Generate corpus data with some reader script in ``scripts/``
+  (currently rnc, lib.ru and taiga are supported)
+- Tokenize corpus with ``scripts/tokenize_corpus.py``
+- Manually split into train, validation and test
+- Split train corpus into parts with ``scripts/split_corpus.py``
+- Build vocabulary with ``scripts/build_vocab.py`` from train data
+  (500000 is an ok limit if in doubt)
+
+# Original README
+
 The codebase implements LSTM language model baseline from https://arxiv.org/abs/1602.02410
 The code supports running on the machine with multiple GPUs using synchronized gradient updates (which is the main difference with the paper).
 
