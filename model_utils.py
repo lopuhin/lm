@@ -45,7 +45,7 @@ def _get_concat_variable(name, shape, dtype, num_shards):
     if len(_sharded_variable) == 1:
         return _sharded_variable[0]
 
-    return tf.concat(0, _sharded_variable)
+    return tf.concat(_sharded_variable, 0)
 
 
 class LSTMCell(tf.nn.rnn_cell.RNNCell):
@@ -101,10 +101,10 @@ class LSTMCell(tf.nn.rnn_cell.RNNCell):
         with tf.variable_scope(type(self).__name__,
                                initializer=self._initializer):  # 'LSTMCell'
             # i = input_gate, j = new_input, f = forget_gate, o = output_gate
-            cell_inputs = tf.concat(1, [inputs, m_prev])
+            cell_inputs = tf.concat([inputs, m_prev], 1)
             lstm_matrix = tf.nn.bias_add(
                 tf.matmul(cell_inputs, self._concat_w), self._b)
-            i, j, f, o = tf.split(1, 4, lstm_matrix)
+            i, j, f, o = tf.split(lstm_matrix, 4, axis=1)
 
             c = tf.sigmoid(f + 1.0) * c_prev + tf.sigmoid(i) * tf.tanh(j)
             m = tf.sigmoid(o) * tf.tanh(c)
@@ -112,5 +112,5 @@ class LSTMCell(tf.nn.rnn_cell.RNNCell):
             if self._num_proj is not None:
                 m = tf.matmul(m, self._concat_w_proj)
 
-        new_state = tf.concat(1, [c, m])
+        new_state = tf.concat([c, m], 1)
         return m, new_state

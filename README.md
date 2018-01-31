@@ -1,6 +1,6 @@
 # lm
 
-Currently Tensorflow 0.11 is supported.
+Currently Tensorflow 1.5 is supported.
 
 - Generate corpus data with some reader script in ``scripts/``
   (currently rnc, lib.ru and taiga are supported).

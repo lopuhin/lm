@@ -18,9 +18,9 @@ class LM(object):
 
         losses = []
         tower_grads = []
-        xs = tf.split(0, hps.num_gpus, self.x)
-        ys = tf.split(0, hps.num_gpus, self.y)
-        ws = tf.split(0, hps.num_gpus, self.w)
+        xs = tf.split(self.x, hps.num_gpus, axis=0)
+        ys = tf.split(self.y, hps.num_gpus, axis=0)
+        ws = tf.split(self.w, hps.num_gpus, axis=0)
         for i in range(hps.num_gpus):
             with tf.device(assign_to_gpu(i, ps_device)),\
                  tf.variable_scope(tf.get_variable_scope(),
@@ -33,7 +33,7 @@ class LM(object):
                     tower_grads += [cur_grads]
 
         self.loss = tf.add_n(losses) / len(losses)
-        tf.scalar_summary('model/loss', self.loss)
+        tf.summary.scalar('model/loss', self.loss)
 
         self.global_step = tf.get_variable(
             'global_step', [], tf.int32,
@@ -45,7 +45,7 @@ class LM(object):
                 hps.learning_rate, initial_accumulator_value=1.0)
             self.train_op = optimizer.apply_gradients(
                 grads, global_step=self.global_step)
-            self.summary_op = tf.merge_all_summaries()
+            self.summary_op = tf.summary.merge_all()
         else:
             self.train_op = tf.no_op()
 
@@ -81,7 +81,7 @@ class LM(object):
         if hps.keep_prob < 1.0:
             x = tf.nn.dropout(x, hps.keep_prob)
 
-        inputs = [tf.squeeze(v, [1]) for v in tf.split(1, hps.num_steps, x)]
+        inputs = [tf.squeeze(v, [1]) for v in tf.split(x, hps.num_steps, axis=1)]
 
         for i in range(hps.num_layers):
             with tf.variable_scope('lstm_%d' % i):
@@ -98,7 +98,7 @@ class LM(object):
                     [self.initial_states[i].assign(state)]):
                 inputs[t] = tf.identity(inputs[t])
 
-        inputs = tf.reshape(tf.concat(1, inputs), [-1, hps.projected_size])
+        inputs = tf.reshape(tf.concat(inputs, 1), [-1, hps.projected_size])
         tf.add_to_collection('hidden_output', inputs)
 
         # Initialization ignores the fact that softmax_w is transposed.
@@ -108,7 +108,7 @@ class LM(object):
         softmax_b = tf.get_variable('softmax_b', [hps.vocab_size])
 
         full_softmax_w = tf.reshape(
-            tf.concat(1, softmax_w), [-1, hps.projected_size])
+            tf.concat(softmax_w, 1), [-1, hps.projected_size])
         full_softmax_w = full_softmax_w[:hps.vocab_size, :]
 
         logits = (tf.matmul(inputs, full_softmax_w, transpose_b=True) +
@@ -123,8 +123,12 @@ class LM(object):
         else:
             targets = tf.reshape(y, [-1, 1])
             loss = tf.nn.sampled_softmax_loss(
-                softmax_w, softmax_b, tf.to_float(inputs),
-                targets, hps.num_sampled, hps.vocab_size)
+                weights=softmax_w,
+                biases=softmax_b,
+                labels=targets,
+                inputs=tf.to_float(inputs),
+                num_sampled=hps.num_sampled,
+                num_classes=hps.vocab_size)
 
         loss = tf.reduce_mean(loss * tf.reshape(w, [-1]))
         return loss
@@ -158,11 +162,11 @@ class LM(object):
         assert len(clipped_grads) == len(orig_grads)
 
         if summaries:
-            tf.scalar_summary('model/lstm_grad_norm', lstm_norm)
-            tf.scalar_summary(
+            tf.summary.scalar('model/lstm_grad_norm', lstm_norm)
+            tf.summary.scalar(
                 'model/lstm_grad_scale',
                 tf.minimum(hps.max_grad_norm / lstm_norm, 1.0))
-            tf.scalar_summary(
+            tf.summary.scalar(
                 'model/lstm_weight_norm', tf.global_norm(lstm_vars))
             # for v, g, cg in zip(all_vars, orig_grads, clipped_grads):
             #     name = v.name.lstrip('model/')
