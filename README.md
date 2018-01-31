@@ -3,8 +3,11 @@
 Currently Tensorflow 0.11 is supported.
 
 - Generate corpus data with some reader script in ``scripts/``
-  (currently rnc, lib.ru and taiga are supported)
-- Tokenize corpus with ``scripts/tokenize_corpus.py``
+  (currently rnc, lib.ru and taiga are supported).
+  If building a new script, note that you are responsible for shuffling if it
+  is heterogeneous: shuffle either texts at this step
+  or sentences after tokenization.
+- Tokenize corpus with ``scripts/tokenize_corpus.py`` (check options)
 - Manually split into train, validation and test
 - Split train corpus into parts with ``scripts/split_corpus.py``
 - Build vocabulary with ``scripts/build_vocab.py`` from train data
