@@ -6,7 +6,7 @@ Currently Tensorflow 1.5 is supported.
   (currently rnc, lib.ru and taiga are supported).
   If building a new script, note that you are responsible for shuffling if it
   is heterogeneous: shuffle either texts at this step,
-  or sentences after tokenization, or use ``scripts/shuffle_blocks.py``.
+  or sentences after tokenization.
 - Tokenize corpus with ``scripts/tokenize_corpus.py`` (check options).
 - Manually split into train, validation and test.
 - Split train corpus into parts with ``scripts/split_corpus.py``.
