@@ -119,7 +119,7 @@ def run_eval(dataset, hps, logdir, mode, num_eval_steps):
                             intra_op_parallelism_threads=20,
                             inter_op_parallelism_threads=1)
     sess = tf.Session(config=config)
-    sw = tf.train.SummaryWriter(logdir + '/' + mode, sess.graph)
+    sw = tf.summary.FileWriter(logdir + '/' + mode, sess.graph)
     ckpt_loader = CheckpointLoader(saver, model.global_step, logdir + '/train')
 
     with sess.as_default():

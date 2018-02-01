@@ -119,7 +119,7 @@ class LM(object):
             # targets = tf.reshape(tf.transpose(self.y), [-1])
             targets = tf.reshape(y, [-1])
             loss = tf.nn.sparse_softmax_cross_entropy_with_logits(
-                logits, targets)
+                labels=targets, logits=logits)
         else:
             targets = tf.reshape(y, [-1, 1])
             loss = tf.nn.sampled_softmax_loss(
