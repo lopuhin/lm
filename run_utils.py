@@ -116,7 +116,7 @@ def run_eval(dataset, hps, logdir, mode, num_eval_steps):
 
     # Use only 4 threads for the evaluation.
     config = tf.ConfigProto(allow_soft_placement=True,
-                            intra_op_parallelism_threads=20,
+                            intra_op_parallelism_threads=4,
                             inter_op_parallelism_threads=1)
     sess = tf.Session(config=config)
     sw = tf.summary.FileWriter(logdir + '/' + mode, sess.graph)
