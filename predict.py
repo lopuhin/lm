@@ -33,7 +33,7 @@ class Model:
     def _init_state(self, batch_size):
         # FIXME - well, that's not very general/portable
         # (especially the way we get the shape, but zeros too)
-        proj_w = [v for v in tf.all_variables()
+        proj_w = [v for v in tf.global_variables()
                   if v.name == 'model/lstm_0/LSTMCell/W_P_0:0'][0]
         state_size, proj_size = proj_w.get_shape()
         for v in tf.get_collection('initial_state'):
