@@ -41,7 +41,7 @@ def run():
 
     global model
     model = Model(args.model, args.vocab)
-    app.run(port=args.port, host=args.host, debug=args.debug)
+    app.run(port=args.port, host=args.host, debug=args.debug, threaded=False)
 
 
 if __name__ == '__main__':
